@@ -16,7 +16,10 @@ namespace Mobilek
         private string _searchCity;
         private string _searchZipCode;
 
+        public Station SelectedStation { get; set; }
+
         private ICommand _getStations;
+        private ICommand _deleteStation;
 
         ObservableCollection<Station> _stationsCollection = new ObservableCollection<Station>();
 
@@ -24,36 +27,6 @@ namespace Mobilek
         {
             get
             {
-                using (var entities = new MobilekEntities())
-                {
-                    var stations = entities.Stations.AsEnumerable();
-
-                    if(!string.IsNullOrWhiteSpace(_searchStreet))
-                    {
-                        stations = stations.Where(s => s.street.StartsWith(_searchStreet));
-                    }
-                    if (!string.IsNullOrWhiteSpace(_searchStreetNo))
-                    {
-                        int no;
-                        if(Int32.TryParse(_searchStreetNo,out no))
-                        {
-                            stations = stations.Where(s => s.streetNumer == no);
-                        }
-                    }
-                    if (!string.IsNullOrWhiteSpace(_searchCity))
-                    {
-                        stations = stations.Where(s => s.city.StartsWith(_searchCity));
-                    }
-                    if (!string.IsNullOrWhiteSpace(_searchZipCode))
-                    {
-                        stations = stations.Where(s => s.zipCode.StartsWith(_searchZipCode));
-                    }
-                    
-
-                    _stationsCollection = ToObservableCollectioncs.ToObservableCollection<Station>(stations);
-                }
-
-
                     return _stationsCollection;
             }
             set
@@ -76,10 +49,35 @@ namespace Mobilek
                 return _getStations;
             }
         }
+        public ICommand DeleteStationCommand
+        {
+            get
+            {
+                if (_deleteStation == null)
+                {
+                    _deleteStation = new RelayCommand(
+                        param => DeleteStation()
+                    );
+                }
+                return _deleteStation;
+            }
+        }
+        private void DeleteStation()
+        {
+            if(SelectedStation!= null)
+            {
+                using (var entities = new MobilekEntities())
+                {
+                    var toRemove = entities.Stations.Single(x => x.Id == SelectedStation.Id);
+                    entities.Stations.Remove(toRemove);
+                    entities.SaveChanges();
+                }
+                GetStations();
+            }
+        }
 
         private void GetStations()
         {
-
             using (var entities = new MobilekEntities())
             {
                 var stations = entities.Stations.AsEnumerable();
@@ -104,13 +102,8 @@ namespace Mobilek
                 {
                     stations = stations.Where(s => s.zipCode.StartsWith(_searchZipCode));
                 }
-
-
                 StationsCollection = ToObservableCollectioncs.ToObservableCollection<Station>(stations);
             }
-
-
-
         }
 
         public string SearchStreet
